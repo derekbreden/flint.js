@@ -7,9 +7,7 @@
  * selecting elements, binding events, and creating new elements using
  * a template syntax.
  * 
- * Author: [Your Name]
- * Version: 1.0.0
- * License: MIT
+ * Author: Derek Bredensteiner
  * 
  * Usage Examples:
  * ---------------
@@ -28,7 +26,7 @@
  *    const newElement = $(`
  *      div
  *        h2 Title
- *        p This is a paragraph with a link: [Link](https://example.com)
+ *        p This is a paragraph
  *        ul
  *          li Item 1
  *          li Item 2
