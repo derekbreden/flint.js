@@ -48,7 +48,7 @@ Create new elements using a clean and readable template syntax:
 const newElement = $(`
   div
     h2 Title
-    p This is a paragraph with a link: [Link](https://example.com)
+    p This is a paragraph
     ul
       li Item 1
       li Item 2
