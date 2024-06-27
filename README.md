@@ -110,7 +110,7 @@ document.body.appendChild(newDiv);
 
 ```javascript
 const card = $(`
-  div.card[style=$1]
+  div[style=$1]
     h3 $2
     p $3
 `, ["background: lightgray;", "Card Title", "This is the card content."]);
