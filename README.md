@@ -121,10 +121,6 @@ document.body.appendChild(card);
 
 If you'd like to contribute to Flint.js, please fork the repository and use a feature branch. Pull requests are warmly welcome.
 
-## License
-
-This project is licensed under the MIT License. See the LICENSE file for details.
-
 ## Author
 
 Derek Bredensteiner
