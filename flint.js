@@ -153,10 +153,30 @@ const $ = (selector_or_flint, flint_args_or_element) => {
       return element;
     };
 
-    // Create the root element from the template
-    const rootElement = createElement(flint);
-    addHelpers(rootElement);
-    return rootElement;
+    // Create a wrapper for potential multiple root elements
+    const rootElements = document.createElement("div");
+
+    // Iterate and create all potential root elements into actual root elements in that container
+    let child_level = false;
+    for (let i = 0; i < flint.length; i++) {
+      if (!child_level) {
+        child_level = flint[i].level;
+      }
+      if (flint[i].level === child_level) {
+        const rootElement = createElement(flint, i, rootElements);
+      }
+    }
+
+    // If there is just a single root element, return that with helpers
+    if (rootElements.children.length === 1) {
+      addHelpers(rootElements.children[0]);
+      return rootElements.children[0];
+
+    // If there are multiple root elemeents, return the array with helpers
+    } else {
+      addHelpers(rootElements);
+      return rootElements;
+    }
 
   } else {
     // Handle element selection and manipulation
