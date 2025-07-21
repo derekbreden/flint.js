@@ -52,8 +52,11 @@ Errors should bubble up immediately. No catching and hiding errors - let them fa
 - `div Hello $1 World` - mixed text and parameters (throws error)
 - `div $1 and $2` - multiple parameters in content (throws error)
 
-### Function Parameters
-Functions in template arguments execute immediately. Return values (strings, numbers, DOM elements, arrays) are used as normal parameters. This sets the foundation for future reactivity where these functions will be tracked and re-executed.
+### Function Parameters and Reactivity
+Functions in template arguments execute immediately and are tracked for dependencies. When reactive state changes, these functions re-execute and update the DOM automatically. Return values (strings, numbers, DOM elements, arrays) are used as parameters for both content and attributes.
+
+**Reactive Content**: `div $1` where `$1` is `() => _.message` updates when `_.message` changes
+**Reactive Attributes**: `div[class=$1]` where `$1` is `() => _.theme` updates attributes when `_.theme` changes
 
 ## Testing Philosophy
 

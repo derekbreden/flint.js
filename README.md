@@ -124,6 +124,27 @@ $("button").on("click", () => {
 })
 ```
 
+### Reactive Attributes
+
+```javascript
+_.theme = "dark"
+_.isActive = true
+
+const card = _(`
+  div[class=$1][data-active=$2][hidden=$3]
+    h3 $4
+`, [
+  () => `card ${_.theme}`,     // Reactive class attribute
+  () => _.isActive,            // Reactive data attribute  
+  () => !_.isActive,           // Reactive boolean attribute
+  () => "User Card"
+])
+
+// Attribute updates happen automatically
+_.theme = "light"              // Updates class to "card light"
+_.isActive = false             // Updates data-active to "false", adds hidden attribute
+```
+
 ## Key Features
 
 - **Zero dependencies** - Pure JavaScript, works in any modern browser
@@ -167,6 +188,7 @@ _(`button[class=primary][disabled] Click me`)
 // Parameters replace placeholders
 _(`div $1`, ["Hello World"])
 
-// Functions create reactive content
+// Functions create reactive content and attributes
 _(`p $1`, [() => _.message])
+_(`div[class=$1] $2`, [() => _.theme, () => _.content])
 ```
