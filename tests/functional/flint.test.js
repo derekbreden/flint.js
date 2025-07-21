@@ -98,13 +98,13 @@ const tests = {
 		const app = _(`
 			div[test-functions]
 				h1 $1
-				p Count: $2
-				p Status: $3
-				$4
+				p $2
+				p $3
+				div $4
 		`, [
 			() => `Welcome ${user.name}`,
-			() => count,
-			() => user.active ? "Active" : "Inactive", 
+			() => `Count: ${count}`,
+			() => `Status: ${user.active ? "Active" : "Inactive"}`, 
 			() => _(`
 				ul
 					li Item 1

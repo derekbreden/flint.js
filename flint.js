@@ -100,16 +100,28 @@ const _ = (template, args) => {
 			})
 
 			if (rest.includes("$")) {
-				const content = rest.replace(/\$\d+/g, (match) => {
-					const arg_index = Number(match.slice(1)) - 1
-					return flint_args[arg_index] !== undefined
-						? flint_args[arg_index]
-						: match
-				})
-				if (element.tagName === "TEXTAREA") {
-					element.value = content
+				// Handle single parameter as content: "div $1" case
+				const match = rest.match(/^\$(\d+)$/)
+				if (match) {
+					const arg_index = Number(match[1]) - 1
+					const arg = flint_args[arg_index]
+					if (arg !== undefined) {
+						if (typeof arg === "string" || typeof arg === "number") {
+							if (element.tagName === "TEXTAREA") {
+								element.value = arg
+							} else {
+								element.textContent = arg
+							}
+						} else if (arg && typeof arg === "object" && arg.nodeType) {
+							// DOM element - append as child
+							element.appendChild(arg)
+						} else if (Array.isArray(arg)) {
+							arg.forEach(child => element.appendChild(child))
+						}
+					}
 				} else {
-					element.textContent = content
+					// Unsupported: mixed text and parameters
+					throw new Error(`Unsupported template syntax: "${rest}". Use either static text or a single parameter like $1.`)
 				}
 			} else if (rest.length) {
 				element.textContent = rest
