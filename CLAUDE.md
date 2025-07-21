@@ -93,14 +93,6 @@ Make incremental changes that can be immediately tested and verified. Use tempor
 ### Fail Fast Philosophy
 Errors should be loud, immediate, and obvious. Never catch and hide errors. Let them bubble up so problems are discovered quickly. An explicit error is always better than unexpected behavior.
 
-## Collaboration Patterns
-
-### Teaching Through Questioning
-When something seems wrong, ask questions to guide discovery rather than immediately prescribing solutions. "I am curious about this change...and why" leads to better understanding than direct correction.
-
-### Document Intent, Not Just Implementation
-Code should be self-explanatory, but architectural decisions need documentation. Future developers (including future Claude instances) need to understand the reasoning behind choices, not just the current state.
-
 ### Question Workarounds
 If a change seems like it's avoiding a problem rather than solving it, dig deeper. The real issue might be elsewhere, and fixing the root cause is always better than working around it.
 
