@@ -46,7 +46,11 @@ const createTodoItem = (todo, afterRender) => {
 	
 	// Attach event handlers directly to the elements
 	todo_item.$("[toggle]").on("click", () => {
-		toggleTodo(todo.id)
+		const todo_to_toggle = _.todos.find(t => t.id === Number(todo.id))
+		if (todo_to_toggle) {
+			todo_to_toggle.completed = !todo_to_toggle.completed
+			saveTodos()
+		}
 	})
 	
 	todo_item.$("button[destroy]").on("click", () => {
@@ -71,7 +75,16 @@ const createTodoItem = (todo, afterRender) => {
 		
 		edit_input.on("keydown", (e) => {
 			if (e.key === "Enter") {
-				editTodo(todo.id, e.target.value)
+				const todo_to_edit = _.todos.find(t => t.id === Number(todo.id))
+				if (todo_to_edit) {
+					if (e.target.value.trim()) {
+						todo_to_edit.text = e.target.value.trim()
+					} else {
+						_.todos = _.todos.filter(t => t.id !== Number(todo.id))
+					}
+					_.editing_id = null
+					saveTodos()
+				}
 			} else if (e.key === "Escape") {
 				_.editing_id = null
 			}
@@ -79,7 +92,16 @@ const createTodoItem = (todo, afterRender) => {
 		
 		edit_input.on("blur", () => {
 			if (_.editing_id === todo.id) {
-				editTodo(todo.id, edit_input.value)
+				const todo_to_edit = _.todos.find(t => t.id === Number(todo.id))
+				if (todo_to_edit) {
+					if (edit_input.value.trim()) {
+						todo_to_edit.text = edit_input.value.trim()
+					} else {
+						_.todos = _.todos.filter(t => t.id !== Number(todo.id))
+					}
+					_.editing_id = null
+					saveTodos()
+				}
 			}
 		})
 	}
@@ -153,30 +175,9 @@ const addTodo = (text) => {
 	}
 }
 
-const toggleTodo = (id) => {
-	const todo = _.todos.find(t => t.id === Number(id))
-	if (todo) {
-		todo.completed = !todo.completed
-		saveTodos()
-	}
-}
-
 const deleteTodo = (id) => {
 	_.todos = _.todos.filter(t => t.id !== Number(id))
 	saveTodos()
-}
-
-const editTodo = (id, new_text) => {
-	const todo = _.todos.find(t => t.id === Number(id))
-	if (todo) {
-		if (new_text.trim()) {
-			todo.text = new_text.trim()
-		} else {
-			deleteTodo(id)
-		}
-		_.editing_id = null
-		saveTodos()
-	}
 }
 
 const toggleAll = () => {
