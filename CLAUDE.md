@@ -33,6 +33,52 @@ When making changes, use this format:
 
 **The test:** Would you rather debug the abstracted or original version?
 
+## Flint.js Philosophy
+
+### Fail Fast
+Errors should bubble up immediately. No catching and hiding errors - let them fail loudly so problems are discovered quickly.
+
+### Clean API Separation
+- **`_` function**: Template creation only. Executes functions immediately, creates DOM elements.
+- **`$` function**: DOM selection only. Returns elements with helper methods.
+
+### Template Syntax Rules
+**Supported:**
+- `$1` - entire tag replaced by parameter
+- `div $1` - div with single parameter as content
+- `div Hello World` - div with static text
+
+**Rejected:**
+- `div Hello $1 World` - mixed text and parameters (throws error)
+- `div $1 and $2` - multiple parameters in content (throws error)
+
+### Function Parameters
+Functions in template arguments execute immediately. Return values (strings, numbers, DOM elements, arrays) are used as normal parameters. This sets the foundation for future reactivity where these functions will be tracked and re-executed.
+
+## Testing Philosophy
+
+### No Guard Assertions
+
+If your test would fail anyway from more specific checks later on, your assertion is pointless noise.
+
+```javascript
+// ❌ WRONG: $element.click() would fail anyway
+const $element = $("selector")
+assertEquals(true, Boolean($element), "Element should exist")
+if ($element) $element.click()
+
+// ❌ WRONG: $("profile-edit-button").click() would fail anyway
+$("nav-link").click()
+assertEquals("/user/profile", state.path, "Should be on profile") // NOISE
+$("profile-edit-button").click() // This tells you navigation failed anyway
+
+// ✅ CORRECT: Check exact text (not just existence) of an element
+assertEquals("text", $("selector").textContent.trim(), "Text should match")
+```
+
+### Test Structure
+Tests should exercise complete flows and only assert final outcomes that matter. Use `_` to create test elements, `$` to select and interact with them.
+
 ## You are new
 When I am new to a code base, there are a few things I like to do:
 
