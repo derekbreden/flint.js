@@ -143,7 +143,7 @@ const tests = {
 		)
 	},
 
-	testStateMonitoring: async () => {
+	testReactivity: async () => {
 		const window = await setupTestEnvironment()
 		const { $, _ } = window
 
@@ -151,11 +151,6 @@ const tests = {
 		_.count = 42
 		_.user = { name: "Bob", age: 30 }
 		_.items = ["apple", "banana", "cherry"]
-
-		// Access the properties (should trigger get monitoring)
-		const count_value = _.count
-		const user_name = _.user.name
-		const first_item = _.items[0]
 
 		// Use state in template functions
 		const app = _(`
