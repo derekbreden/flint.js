@@ -26,13 +26,40 @@ Implement fine-grained reactivity where `_` serves dual purpose: template creati
 ✅ State property monitoring via Proxy  
 🔄 **Next**: Dependency tracking and automatic re-execution
 
+## Critical Design Decision: Deep Observation, Shallow Tracking
+
+**Observation Level**: Deep - detect changes at any nested level like `_.foo.bar.baz = "b"`  
+**Dependency Tracking Level**: Shallow - only track top-level properties like `_.foo`  
+**Re-render Trigger**: When `_.foo.bar.baz` changes, treat it as "_.foo changed" and re-render any function that accessed `_.foo`
+
+Example:
+```javascript
+_.user = { profile: { name: "Alice" } }
+() => _.user.profile.name  // Tracks dependency: ["user"] (not "user.profile.name")
+_.user.profile.name = "Bob"  // Detected as change to "user", triggers re-render
+```
+
+This keeps dependency tracking simple while ensuring all relevant changes trigger updates.
+
 ## Next Steps (Individual Changes)
 
-### Step 4: Track Function Dependencies
-When functions execute during template creation, track which `_` properties they access:
+### Step 4: Implement Deep Object Monitoring  
+**IMMEDIATE NEXT STEP**: Set up nested Proxy monitoring to detect deep changes but report them as top-level changes:
 ```javascript
-// During: () => _.count + _.user.name
-// Track: ['count', 'user.name'] for this specific function
+_.foo = {bar: {baz: "a"}}
+_.foo.bar.baz = "b"  // Should console.warn: "[MONITOR] Property 'foo' changed"
+```
+- Add recursive Proxy wrapping for nested objects
+- Implement change bubbling to top-level property names
+- Add temporary console.warn to verify deep changes are detected as top-level
+- Test with nested object modifications and verify correct property names reported
+- Remove console.warn after verification
+
+### Step 5: Track Function Dependencies
+When functions execute during template creation, track which top-level `_` properties they access:
+```javascript
+// During: () => _.count + _.user.profile.name
+// Track: ['count', 'user'] for this specific function (top-level only)
 ```
 - Implement tracking context stack
 - Store dependencies per DOM node/function pair

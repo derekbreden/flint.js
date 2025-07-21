@@ -231,16 +231,31 @@ _(`
 - As an object: holds reactive state with Proxy-based tracking
 
 ### 2. Dependency Tracking
-Each reactive function tracks its own dependencies independently:
+Each reactive function tracks its own dependencies independently at the **top-level property only**:
 
 ```javascript
 // When this function executes:
 () => _.showDetails ? _.user.name : "Hidden"
 
 // It tracks dependencies based on execution path:
-// If _.showDetails is true: tracks ['showDetails', 'user.name']
+// If _.showDetails is true: tracks ['showDetails', 'user'] (not 'user.name')
 // If _.showDetails is false: tracks ['showDetails'] only
 ```
+
+**Deep Observation, Shallow Tracking**: Changes are observed at any nested level but dependencies are tracked only at the top-level property:
+
+```javascript
+_.user = { profile: { name: "Alice", age: 30 } }
+
+// Function that depends on user data
+() => _.user.profile.name  // Tracks dependency: ['user']
+
+// Later: deep change detection
+_.user.profile.name = "Bob"  // Detected as change to 'user'
+// Triggers: re-render of function above (depends on 'user')
+```
+
+This design keeps dependency tracking simple while still detecting all relevant changes.
 
 ### 3. Tracking Context Stack
 The stack exists solely to map executing functions to their target DOM nodes:
