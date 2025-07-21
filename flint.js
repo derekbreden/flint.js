@@ -401,13 +401,16 @@ $.reExecuteDependentFunctions = (prop) => {
 				// Content update
 				if (typeof new_result === "string" || typeof new_result === "number") {
 					tracking_context.node.textContent = new_result
+				} else if (Array.isArray(new_result)) {
+					// For array updates, replace with wrapper element
+					const wrapper = document.createElement("span")
+					wrapper.style.display = "contents"
+					new_result.forEach((child) => wrapper.appendChild(child))
+					tracking_context.node.replaceWith(wrapper)
+					tracking_context.node = wrapper
 				} else if (new_result && new_result.nodeType) {
 					tracking_context.node.replaceWith(new_result)
 					tracking_context.node = new_result // Update reference
-				} else if (Array.isArray(new_result)) {
-					// Handle array of elements - clear wrapper and add new elements
-					tracking_context.node.innerHTML = ""
-					new_result.forEach((child) => tracking_context.node.appendChild(child))
 				}
 			}
 			
