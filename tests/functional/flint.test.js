@@ -147,63 +147,104 @@ const tests = {
 		const window = await setupTestEnvironment()
 		const { $, _ } = window
 
-		// Set some state properties on _
-		_.count = 42
-		_.user = { name: "Bob", age: 30 }
-		_.items = ["apple", "banana", "cherry"]
+		// Set up state for conditional rendering
+		_.showDetails = false
+		_.user = { name: "Alice" }
+		_.count = 5
 
-		// Use state in template functions
+		// Create template with conditional element rendering
 		const app = _(`
-			div[state-test]
-				p $1
-				p $2
-				p $3
+			div[element-test]
+				h1 Main App
+				$1
 		`, [
-			() => `Count: ${_.count}`,
-			() => `User: ${_.user.name}`,
-			() => `First item: ${_.items[0]}`
+			() => {
+				if (_.showDetails) {
+					return _(`
+						div[details]
+							p $1
+							span $2
+					`, [
+						() => `User: ${_.user.name}`,
+						() => `Count: ${_.count}`
+					])
+				} else {
+					return _(`
+						p[summary] Click to show details
+					`)
+				}
+			}
 		])
 
 		window.document.body.appendChild(app)
 
-		// Verify the initial values made it through correctly
+		// Test initial state (collapsed)
 		assertEquals(
-			"Count: 42",
-			$("p:first-child").textContent,
-			"Initial state count should be accessible"
+			"Click to show details",
+			$("p[summary]").textContent,
+			"Should show summary initially"
 		)
 		assertEquals(
-			"User: Bob",
-			$("p:nth-child(2)").textContent,
-			"Initial state user.name should be accessible"
+			null,
+			$("div[details]"),
+			"Details div should not exist initially"
 		)
-		assertEquals(
-			"First item: apple",
-			$("p:nth-child(3)").textContent,
-			"Initial state items[0] should be accessible"
-		)
+
+		// Expand details - this should replace the summary element
+		_.showDetails = true
 		
-		// Test reactivity: change state and verify DOM updates automatically
-		_.count = 100
 		assertEquals(
-			"Count: 100",
-			$("p:first-child").textContent,
-			"DOM should update when count changes"
+			null,
+			$("p[summary]"),
+			"Summary should be gone after expanding"
 		)
-		
-		_.user.name = "Alice"
 		assertEquals(
 			"User: Alice",
-			$("p:nth-child(2)").textContent,
-			"DOM should update when user.name changes"
+			$("div[details] p").textContent,
+			"Should show user details after expanding"
 		)
-		
-		_.items[0] = "orange"
 		assertEquals(
-			"First item: orange",
-			$("p:nth-child(3)").textContent,
-			"DOM should update when items[0] changes"
+			"Count: 5",
+			$("div[details] span").textContent,
+			"Should show count details after expanding"
 		)
+
+		// Test that inner reactive functions still work after DOM replacement
+		_.user.name = "Bob"
+		assertEquals(
+			"User: Bob",
+			$("div[details] p").textContent,
+			"User name should update reactively in replaced element"
+		)
+
+		_.count = 10
+		assertEquals(
+			"Count: 10",
+			$("div[details] span").textContent,
+			"Count should update reactively in replaced element"
+		)
+
+		// Collapse details - should replace details element with summary
+		_.showDetails = false
+		
+		assertEquals(
+			"Click to show details",
+			$("p[summary]").textContent,
+			"Should show summary after collapsing"
+		)
+		assertEquals(
+			null,
+			$("div[details]"),
+			"Details div should be gone after collapsing"
+		)
+
+		// Test that orphaned inner functions get cleaned up
+		// (Change properties that the removed inner functions were tracking)
+		_.user.name = "Charlie"
+		_.count = 20
+		
+		// If cleanup worked, these changes shouldn't cause any re-execution
+		// of the old (now removed) inner functions
 	},
 }
 

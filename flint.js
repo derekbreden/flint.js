@@ -97,9 +97,18 @@ const createTemplate = (template, args) => {
 			let arg = flint_args[arg_index]
 
 			// Execute function with tracking if needed
+			let tracking_context = null
 			if (typeof arg === "function") {
-				const text_node = document.createTextNode("") // Create target node first
-				arg = executeWithTracking(arg, text_node)
+				const placeholder_node = document.createTextNode("") // Temporary placeholder
+				tracking_context = {
+					fn: arg,
+					node: placeholder_node,
+					dependencies: new Set()
+				}
+				
+				tracking_stack.push(tracking_context)
+				arg = arg()
+				tracking_stack.pop()
 			}
 
 			if (typeof arg === "string") {
@@ -109,6 +118,19 @@ const createTemplate = (template, args) => {
 				arg.forEach((child) => element.appendChild(child))
 			} else {
 				element = arg
+			}
+			
+			// Update tracking context to point to actual element
+			if (tracking_context) {
+				tracking_context.node = element
+				
+				// Store dependencies in the global map
+				tracking_context.dependencies.forEach(prop => {
+					if (!dependency_map.has(prop)) {
+						dependency_map.set(prop, new Set())
+					}
+					dependency_map.get(prop).add(tracking_context)
+				})
 			}
 		} else {
 			element = document.createElement(tag)
