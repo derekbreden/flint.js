@@ -37,8 +37,8 @@ const createTodoItem = (todo, afterRender) => {
 			input[edit][value=$6]
 	`, [
 		() => todo.id,
-		() => todo.completed ? "true" : "",
-		() => _.editing_id === todo.id ? "true" : "",
+		() => todo.completed ? true : false,
+		() => _.editing_id === todo.id ? true : false,
 		() => todo.completed,
 		() => todo.text,
 		() => todo.text
