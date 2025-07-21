@@ -239,12 +239,33 @@ const tests = {
 		)
 
 		// Test that orphaned inner functions get cleaned up
-		// (Change properties that the removed inner functions were tracking)
+		// Changes to cleaned up properties shouldn't cause any re-execution
 		_.user.name = "Charlie"
 		_.count = 20
 		
-		// If cleanup worked, these changes shouldn't cause any re-execution
-		// of the old (now removed) inner functions
+		// Verify cleanup by inspecting $.dependency_map directly AFTER the changes
+		const userDependencies = $.dependency_map.get("user")
+		const countDependencies = $.dependency_map.get("count")
+		
+		// Should have no functions depending on user/count since details are collapsed
+		assertEquals(
+			undefined,
+			userDependencies,
+			"user dependencies should be cleaned up after collapse"
+		)
+		assertEquals(
+			undefined,
+			countDependencies,
+			"count dependencies should be cleaned up after collapse"
+		)
+		
+		// showDetails should still have one dependency (the main conditional function)
+		const showDetailsDependencies = $.dependency_map.get("showDetails")
+		assertEquals(
+			1,
+			showDetailsDependencies?.size || 0,
+			"showDetails should still have main function dependency"
+		)
 	},
 }
 

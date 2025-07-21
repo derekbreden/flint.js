@@ -10,36 +10,55 @@
 		title.textContent = "New Title"
 */
 
-const addHelpers = (element, $all) => {
+const $ = (selector, element) => {
+	element = element || document
+	const $all = element.querySelectorAll(selector)
+
+	$all.forEach((el) => $.addHelpers(el, $all))
+
+	if ($all.length === 1) {
+		return $all[0]
+	} else if ($all.length === 0) {
+		return null
+	} else {
+		return $all
+	}
+}
+
+// Dependency tracking infrastructure
+$.dependency_map = new Map() // Map<string, Set<{fn, node}>>
+$.tracking_stack = [] // Stack for capturing dependencies during function execution
+
+$.addHelpers = (element, $all) => {
 	element.on = element.addEventListener.bind(element)
 	element.forEach = (f) => $all.forEach(f)
 	element.$ = (selector) => $(selector, element)
 	element.length = $all ? $all.length : 1
 }
 
-const executeWithTracking = (fn, target_node) => {
+$.executeWithTracking = (fn, target_node) => {
 	const tracking_context = {
 		fn: fn,
 		node: target_node,
 		dependencies: new Set()
 	}
 	
-	tracking_stack.push(tracking_context)
+	$.tracking_stack.push(tracking_context)
 	const result = fn()
-	tracking_stack.pop()
+	$.tracking_stack.pop()
 	
 	// Store dependencies in the global map
 	tracking_context.dependencies.forEach(prop => {
-		if (!dependency_map.has(prop)) {
-			dependency_map.set(prop, new Set())
+		if (!$.dependency_map.has(prop)) {
+			$.dependency_map.set(prop, new Set())
 		}
-		dependency_map.get(prop).add(tracking_context)
+		$.dependency_map.get(prop).add(tracking_context)
 	})
 	
 	return result
 }
 
-const createTemplate = (template, args) => {
+$.createTemplate = (template, args) => {
 	// Don't execute functions yet - we'll do that when creating DOM nodes
 	const flint_args = (args || []).map(arg => {
 		return arg // Keep functions as-is for now
@@ -106,9 +125,9 @@ const createTemplate = (template, args) => {
 					dependencies: new Set()
 				}
 				
-				tracking_stack.push(tracking_context)
+				$.tracking_stack.push(tracking_context)
 				arg = arg()
-				tracking_stack.pop()
+				$.tracking_stack.pop()
 			}
 
 			if (typeof arg === "string") {
@@ -126,10 +145,10 @@ const createTemplate = (template, args) => {
 				
 				// Store dependencies in the global map
 				tracking_context.dependencies.forEach(prop => {
-					if (!dependency_map.has(prop)) {
-						dependency_map.set(prop, new Set())
+					if (!$.dependency_map.has(prop)) {
+						$.dependency_map.set(prop, new Set())
 					}
-					dependency_map.get(prop).add(tracking_context)
+					$.dependency_map.get(prop).add(tracking_context)
 				})
 			}
 		} else {
@@ -155,7 +174,7 @@ const createTemplate = (template, args) => {
 					
 					// Execute function with tracking if needed
 					if (typeof arg === "function") {
-						arg = executeWithTracking(arg, element)
+						arg = $.executeWithTracking(arg, element)
 					}
 					
 					if (arg !== undefined) {
@@ -215,15 +234,15 @@ const createTemplate = (template, args) => {
 	}
 
 	if (root_element.children.length === 1) {
-		addHelpers(root_element.children[0])
+		$.addHelpers(root_element.children[0])
 		return root_element.children[0]
 	} else {
-		addHelpers(root_element)
+		$.addHelpers(root_element)
 		return root_element
 	}
 }
 
-const createReactiveProxy = (obj, rootProp = null) => {
+$.createReactiveProxy = (obj, rootProp = null) => {
 	return new Proxy(obj, {
 		get(target, prop) {
 			// TODO: Track property access for dependency tracking
@@ -239,7 +258,7 @@ const createReactiveProxy = (obj, rootProp = null) => {
 						// Auto-wrap any object arguments before calling original method
 						const wrappedArgs = args.map(arg => {
 							if (arg && typeof arg === "object" && !arg.nodeType) {
-								return createReactiveProxy(arg, changedProp)
+								return $.createReactiveProxy(arg, changedProp)
 							}
 							return arg
 						})
@@ -251,7 +270,7 @@ const createReactiveProxy = (obj, rootProp = null) => {
 			}
 			
 			if (value && typeof value === "object" && !value.nodeType) {
-				return createReactiveProxy(value, rootProp || prop)
+				return $.createReactiveProxy(value, rootProp || prop)
 			}
 			return value
 		},
@@ -260,27 +279,29 @@ const createReactiveProxy = (obj, rootProp = null) => {
 			
 			// Auto-wrap assigned values to ensure immediate reactivity
 			if (value && typeof value === "object" && !value.nodeType) {
-				target[prop] = createReactiveProxy(value, changedProp)
+				target[prop] = $.createReactiveProxy(value, changedProp)
 			} else {
 				target[prop] = value
 			}
 			
 			// Re-execute dependent functions
-			reExecuteDependentFunctions(changedProp)
+			$.reExecuteDependentFunctions(changedProp)
 			
 			return true
 		}
 	})
 }
 
-// Dependency tracking infrastructure
-const dependency_map = new Map() // Map<string, Set<{fn, node}>>
-const tracking_stack = [] // Stack for capturing dependencies during function execution
-
-const reExecuteDependentFunctions = (prop) => {
-	if (dependency_map.has(prop)) {
-		const dependent_functions = dependency_map.get(prop)
+$.reExecuteDependentFunctions = (prop) => {
+	if ($.dependency_map.has(prop)) {
+		const dependent_functions = $.dependency_map.get(prop)
 		const functions_to_remove = new Set()
+		
+		// If the Set is empty, just remove the map entry immediately
+		if (dependent_functions.size === 0) {
+			$.dependency_map.delete(prop)
+			return
+		}
 		
 		dependent_functions.forEach(tracking_context => {
 			// Check if node still exists in DOM (memory leak cleanup)
@@ -293,9 +314,9 @@ const reExecuteDependentFunctions = (prop) => {
 			tracking_context.dependencies.clear()
 			
 			// Re-execute with tracking
-			tracking_stack.push(tracking_context)
+			$.tracking_stack.push(tracking_context)
 			const new_result = tracking_context.fn()
-			tracking_stack.pop()
+			$.tracking_stack.pop()
 			
 			// Update DOM content
 			if (typeof new_result === "string" || typeof new_result === "number") {
@@ -310,50 +331,40 @@ const reExecuteDependentFunctions = (prop) => {
 		functions_to_remove.forEach(tracking_context => {
 			dependent_functions.delete(tracking_context)
 		})
+		
+		// Remove the entire map entry if no functions remain
+		if (dependent_functions.size === 0) {
+			$.dependency_map.delete(prop)
+		}
 	}
 }
 
 // Create _ as both a function (for templates) and a reactive state object
-const _ = new Proxy(createTemplate, {
+const _ = new Proxy($.createTemplate, {
 	get(target, prop) {
 		// Track property access for dependency tracking
-		if (tracking_stack.length > 0) {
-			const current_context = tracking_stack[tracking_stack.length - 1]
+		if ($.tracking_stack.length > 0) {
+			const current_context = $.tracking_stack[$.tracking_stack.length - 1]
 			current_context.dependencies.add(prop)
 		}
 		
 		const value = target[prop]
 		if (value && typeof value === "object" && !value.nodeType) {
-			return createReactiveProxy(value, prop)
+			return $.createReactiveProxy(value, prop)
 		}
 		return value
 	},
 	set(target, prop, value) {
 		// Auto-wrap assigned values to ensure immediate reactivity
 		if (value && typeof value === "object" && !value.nodeType) {
-			target[prop] = createReactiveProxy(value, prop)
+			target[prop] = $.createReactiveProxy(value, prop)
 		} else {
 			target[prop] = value
 		}
 		
 		// Re-execute dependent functions
-		reExecuteDependentFunctions(prop)
+		$.reExecuteDependentFunctions(prop)
 		
 		return true
 	}
 })
-
-const $ = (selector, element) => {
-	element = element || document
-	const $all = element.querySelectorAll(selector)
-
-	$all.forEach((el) => addHelpers(el, $all))
-
-	if ($all.length === 1) {
-		return $all[0]
-	} else if ($all.length === 0) {
-		return null
-	} else {
-		return $all
-	}
-}
