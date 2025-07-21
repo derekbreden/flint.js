@@ -120,13 +120,13 @@ $.createTemplate = (template, args) => {
 		const rest = parts.slice(1).join(" ")
 
 		let element = null
+		let tracking_context = null
 
 		if (tag.startsWith("$")) {
 			const arg_index = Number(tag.slice(1)) - 1
 			let arg = flint_args[arg_index]
 
 			// Execute function with tracking if needed
-			let tracking_context = null
 			if (typeof arg === "function") {
 				const placeholder_node = document.createTextNode("") // Temporary placeholder
 				tracking_context = {
@@ -144,10 +144,14 @@ $.createTemplate = (template, args) => {
 				element = document.createTextNode(arg)
 			} else if (Array.isArray(arg)) {
 				if (tracking_context) {
-					// For reactive arrays, create a wrapper span to contain the elements
-					element = document.createElement("span")
-					element.style.display = "contents" // Make wrapper invisible
-					arg.forEach((child) => element.appendChild(child))
+					// For reactive arrays, track the range of nodes
+					if (arg.length === 0) {
+						element = document.createComment("empty-array")
+						tracking_context.nodeRange = [element]
+					} else {
+						element = arg[0]
+						tracking_context.nodeRange = [...arg]
+					}
 				} else {
 					// For static arrays, use DocumentFragment (original behavior)
 					element = document.createDocumentFragment()
@@ -258,6 +262,13 @@ $.createTemplate = (template, args) => {
 
 		if (parent) {
 			parent.appendChild(element)
+			
+			// For reactive arrays, append remaining elements
+			if (tracking_context && tracking_context.nodeRange && tracking_context.nodeRange.length > 1) {
+				for (let i = 1; i < tracking_context.nodeRange.length; i++) {
+					parent.appendChild(tracking_context.nodeRange[i])
+				}
+			}
 		}
 
 		let child_level = false
@@ -370,7 +381,10 @@ $.reExecuteDependentFunctions = (prop) => {
 		
 		dependent_functions.forEach(tracking_context => {
 			// Check if node/element still exists in DOM (memory leak cleanup)
-			const target = tracking_context.node || tracking_context.element
+			let target = tracking_context.node || tracking_context.element
+			if (tracking_context.nodeRange) {
+				target = tracking_context.nodeRange[0] // Check first node in range
+			}
 			if (!target || !document.contains(target)) {
 				functions_to_remove.add(tracking_context)
 				return
@@ -400,17 +414,77 @@ $.reExecuteDependentFunctions = (prop) => {
 			} else {
 				// Content update
 				if (typeof new_result === "string" || typeof new_result === "number") {
-					tracking_context.node.textContent = new_result
+					if (tracking_context.nodeRange) {
+						// Replace range with single text node
+						const textNode = document.createTextNode(new_result)
+						const parent = tracking_context.nodeRange[0].parentNode
+						const nextSibling = tracking_context.nodeRange[tracking_context.nodeRange.length - 1].nextSibling
+						
+						// Remove all nodes in range
+						tracking_context.nodeRange.forEach(node => node.remove())
+						
+						// Insert new text node
+						parent.insertBefore(textNode, nextSibling)
+						tracking_context.node = textNode
+						delete tracking_context.nodeRange
+					} else {
+						tracking_context.node.textContent = new_result
+					}
 				} else if (Array.isArray(new_result)) {
-					// For array updates, replace with wrapper element
-					const wrapper = document.createElement("span")
-					wrapper.style.display = "contents"
-					new_result.forEach((child) => wrapper.appendChild(child))
-					tracking_context.node.replaceWith(wrapper)
-					tracking_context.node = wrapper
+					if (tracking_context.nodeRange) {
+						// Replace range with new array
+						const parent = tracking_context.nodeRange[0].parentNode
+						const nextSibling = tracking_context.nodeRange[tracking_context.nodeRange.length - 1].nextSibling
+						
+						// Remove all nodes in range
+						tracking_context.nodeRange.forEach(node => node.remove())
+						
+						// Insert new array elements
+						if (new_result.length === 0) {
+							const comment = document.createComment("empty-array")
+							parent.insertBefore(comment, nextSibling)
+							tracking_context.nodeRange = [comment]
+						} else {
+							new_result.forEach(child => parent.insertBefore(child, nextSibling))
+							tracking_context.nodeRange = [...new_result]
+						}
+						tracking_context.node = tracking_context.nodeRange[0]
+					} else {
+						// Convert single node to array range
+						const parent = tracking_context.node.parentNode
+						const nextSibling = tracking_context.node.nextSibling
+						
+						// Remove current node
+						tracking_context.node.remove()
+						
+						// Insert new array elements
+						if (new_result.length === 0) {
+							const comment = document.createComment("empty-array")
+							parent.insertBefore(comment, nextSibling)
+							tracking_context.nodeRange = [comment]
+						} else {
+							new_result.forEach(child => parent.insertBefore(child, nextSibling))
+							tracking_context.nodeRange = [...new_result]
+						}
+						tracking_context.node = tracking_context.nodeRange[0]
+					}
 				} else if (new_result && new_result.nodeType) {
-					tracking_context.node.replaceWith(new_result)
-					tracking_context.node = new_result // Update reference
+					if (tracking_context.nodeRange) {
+						// Replace range with single element
+						const parent = tracking_context.nodeRange[0].parentNode
+						const nextSibling = tracking_context.nodeRange[tracking_context.nodeRange.length - 1].nextSibling
+						
+						// Remove all nodes in range
+						tracking_context.nodeRange.forEach(node => node.remove())
+						
+						// Insert new element
+						parent.insertBefore(new_result, nextSibling)
+						tracking_context.node = new_result
+						delete tracking_context.nodeRange
+					} else {
+						tracking_context.node.replaceWith(new_result)
+						tracking_context.node = new_result
+					}
 				}
 			}
 			
