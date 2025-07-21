@@ -143,8 +143,16 @@ $.createTemplate = (template, args) => {
 			if (typeof arg === "string") {
 				element = document.createTextNode(arg)
 			} else if (Array.isArray(arg)) {
-				element = document.createDocumentFragment()
-				arg.forEach((child) => element.appendChild(child))
+				if (tracking_context) {
+					// For reactive arrays, create a wrapper span to contain the elements
+					element = document.createElement("span")
+					element.style.display = "contents" // Make wrapper invisible
+					arg.forEach((child) => element.appendChild(child))
+				} else {
+					// For static arrays, use DocumentFragment (original behavior)
+					element = document.createDocumentFragment()
+					arg.forEach((child) => element.appendChild(child))
+				}
 			} else {
 				element = arg
 			}
@@ -397,19 +405,9 @@ $.reExecuteDependentFunctions = (prop) => {
 					tracking_context.node.replaceWith(new_result)
 					tracking_context.node = new_result // Update reference
 				} else if (Array.isArray(new_result)) {
-					// Handle array of elements - replace with first element, append rest after
-					if (new_result.length > 0) {
-						const first = new_result[0]
-						tracking_context.node.replaceWith(first)
-						tracking_context.node = first // Track first element
-						
-						// Append remaining elements after the first
-						let current = first
-						for (let i = 1; i < new_result.length; i++) {
-							current.parentNode.insertBefore(new_result[i], current.nextSibling)
-							current = new_result[i]
-						}
-					}
+					// Handle array of elements - clear wrapper and add new elements
+					tracking_context.node.innerHTML = ""
+					new_result.forEach((child) => tracking_context.node.appendChild(child))
 				}
 			}
 			
