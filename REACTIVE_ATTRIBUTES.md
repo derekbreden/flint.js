@@ -138,6 +138,31 @@ The existing `$.dependency_map` should work seamlessly:
 - Same cleanup logic applies when elements are removed
 - Same re-execution logic, but different DOM update strategy
 
+### Lazy Cleanup for Attributes
+
+Use the same lazy cleanup approach as content functions:
+
+```javascript
+// When a property changes, check if attribute elements still exist
+dependent_functions.forEach(tracking_context => {
+  // Same cleanup check works for attributes
+  if (!tracking_context.element || !document.contains(tracking_context.element)) {
+    functions_to_remove.add(tracking_context)
+    return
+  }
+  
+  // Re-execute attribute function and update specific attribute
+  const new_value = tracking_context.fn()
+  tracking_context.element.setAttribute(tracking_context.attributeName, new_value)
+})
+```
+
+**Why this works for attributes:**
+- Parent re-renders remove child elements from DOM
+- When attribute dependencies change, `document.contains()` detects orphaned elements
+- Cleanup happens automatically without complex lifecycle tracking
+- Same memory leak prevention as content functions
+
 ### Error Handling
 
 Maintain fail-fast philosophy:
