@@ -14,7 +14,7 @@ const setupTestEnvironment = async () => {
 
 	// Load flint.js
 	const flint_source = fs.readFileSync(path.join(__dirname, "..", "flint.js"), "utf8")
-	const script = new window.Function(flint_source + "; window.$ = $;")
+	const script = new window.Function(flint_source + "; window.$ = $; window._ = _;")
 	script.call(window)
 
 	return window

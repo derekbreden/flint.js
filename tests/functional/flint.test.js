@@ -7,10 +7,10 @@ const { assertEquals, runTests } = require("../testRunUtils.js")
 const tests = {
 	testFlow: async () => {
 		const window = await setupTestEnvironment()
-		const { $ } = window
+		const { $, _ } = window
 
 		// Create a complex nested structure using flint
-		const app = $(`
+		const app = _(`
 			div[app]
 				header
 					h1[title] Todo App
@@ -26,10 +26,10 @@ const tests = {
 		`, [
 			"Welcome to the Flint app",
 			[
-				$(`
+				_(`
 					li[todo] Buy milk
 				`),
-				$(`
+				_(`
 					li[todo] Walk dog
 				`),
 			],
@@ -53,7 +53,7 @@ const tests = {
 		let clicked = false
 		app.$("button[add]").on("click", () => {
 			clicked = true
-			const new_todo = $(`
+			const new_todo = _(`
 				li[todo] $1
 			`, [
 				$("input[type=text]").value
