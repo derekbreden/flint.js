@@ -54,7 +54,8 @@ const createTodoItem = (todo, afterRender) => {
 	})
 	
 	todo_item.$("button[destroy]").on("click", () => {
-		deleteTodo(todo.id)
+		_.todos = _.todos.filter(t => t.id !== Number(todo.id))
+		saveTodos()
 	})
 	
 	todo_item.$("label").on("dblclick", () => {
@@ -122,7 +123,11 @@ const createMainSection = () => {
 	
 	// Attach toggle-all handler
 	main_section.$("[toggle-all]").on("click", () => {
-		toggleAll()
+		const all_completed = _.todos.length > 0 && getActiveCount() === 0
+		_.todos.forEach(todo => {
+			todo.completed = !all_completed
+		})
+		saveTodos()
 	})
 	
 	return main_section
@@ -152,7 +157,8 @@ const createFooter = () => {
 			if (getCompletedCount() > 0) {
 				const clear_button = _(`button[clear-completed] Clear completed`)
 				clear_button.on("click", () => {
-					clearCompleted()
+					_.todos = _.todos.filter(todo => !todo.completed)
+					saveTodos()
 				})
 				return clear_button
 			}
@@ -175,23 +181,6 @@ const addTodo = (text) => {
 	}
 }
 
-const deleteTodo = (id) => {
-	_.todos = _.todos.filter(t => t.id !== Number(id))
-	saveTodos()
-}
-
-const toggleAll = () => {
-	const all_completed = _.todos.length > 0 && getActiveCount() === 0
-	_.todos.forEach(todo => {
-		todo.completed = !all_completed
-	})
-	saveTodos()
-}
-
-const clearCompleted = () => {
-	_.todos = _.todos.filter(todo => !todo.completed)
-	saveTodos()
-}
 
 // Router
 const handleRoute = () => {
