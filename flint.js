@@ -304,7 +304,7 @@ $.createReactiveProxy = (obj, rootProp = null) => {
 			// Track property access for dependency tracking
 			if ($.tracking_stack.length > 0) {
 				const current_context = $.tracking_stack[$.tracking_stack.length - 1]
-				current_context.dependencies.add(rootProp || prop)
+				current_context.dependencies.add(rootProp)
 			}
 			
 			const value = target[prop]
