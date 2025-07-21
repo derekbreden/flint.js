@@ -129,8 +129,6 @@ $("button").on("click", () => {
 - **Zero dependencies** - Pure JavaScript, works in any modern browser
 - **No build step** - Include one file and start coding
 - **Fine-grained reactivity** - Only affected DOM nodes update
-- **Memory safe** - Automatic cleanup prevents memory leaks
-- **Debuggable** - Inspect `$.dependency_map` to see reactive dependencies
 
 ## API Reference
 
@@ -172,13 +170,3 @@ _(`div $1`, ["Hello World"])
 // Functions create reactive content
 _(`p $1`, [() => _.message])
 ```
-
-## Why Flint?
-
-- **Simple** - Two functions (`_` and `$`) do everything
-- **Fast** - Direct DOM manipulation, no virtual DOM overhead  
-- **Small** - Under 10kb minified
-- **Predictable** - Synchronous updates, fail-fast errors
-- **Powerful** - Complex apps with simple reactive patterns
-
-Perfect for prototypes, small apps, or anywhere you want reactive DOM without the complexity of larger frameworks.
