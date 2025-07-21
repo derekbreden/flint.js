@@ -23,9 +23,11 @@ const runTests = async (test_file_name, test_functions) => {
 		} catch (error) {
 			test_results.push({
 				pass: false,
-				message: `Test threw error: ${error.message}`,
-				expected: "No error",
-				actual: error.toString(),
+				message: `Test function "${test_fn.name || "anonymous"}" threw an error:
+    ${error.message}
+    ${error.stack}`,
+				expected: "Test to complete without error",
+				actual: `Error: ${error.message}`,
 			})
 		}
 	}
