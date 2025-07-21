@@ -1,0 +1,15 @@
+{
+  "name": "flint",
+  "version": "0.0.1",
+  "description": "Minimal reactive UI library",
+  "main": "flint.js",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "keywords": ["ui", "reactive", "minimal"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "jsdom": "^26.1.0"
+  }
+}
