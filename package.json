@@ -4,7 +4,7 @@
   "description": "Minimal reactive UI library",
   "main": "flint.js",
   "scripts": {
-    "test": "node test.js"
+    "test": "node tests/runAllTests.js"
   },
   "keywords": ["ui", "reactive", "minimal"],
   "author": "",
