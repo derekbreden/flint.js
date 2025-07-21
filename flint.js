@@ -82,6 +82,8 @@ $.createTemplate = (template, args) => {
 
 		const attributes = (node.text.match(/\[[^\]]*\]/g) || []).map((attr) => {
 			let [key, value] = attr.slice(1, -1).split("=")
+			let is_reactive = false
+			
 			if (key.startsWith("$")) {
 				const arg_index = Number(key.slice(1)) - 1
 				key = flint_args[arg_index]
@@ -89,7 +91,14 @@ $.createTemplate = (template, args) => {
 			if (value) {
 				if (value.startsWith("$")) {
 					const arg_index = Number(value.slice(1)) - 1
-					value = flint_args[arg_index]
+					const arg = flint_args[arg_index]
+					
+					if (typeof arg === "function") {
+						is_reactive = true
+						value = arg // Keep function for later execution
+					} else {
+						value = arg
+					}
 				} else if (value.startsWith(`"`) && value.endsWith(`"`)) {
 					value = value.slice(1, -1)
 				} else if (value.startsWith(`'`) && value.endsWith(`'`)) {
@@ -101,6 +110,7 @@ $.createTemplate = (template, args) => {
 			return {
 				key,
 				value,
+				is_reactive,
 			}
 		})
 
@@ -154,8 +164,12 @@ $.createTemplate = (template, args) => {
 		} else {
 			element = document.createElement(tag)
 
+			// First pass: set static attributes and collect reactive ones
+			const reactive_attributes = []
 			attributes.forEach((attr) => {
-				if (
+				if (attr.is_reactive) {
+					reactive_attributes.push(attr)
+				} else if (
 					attr.value !== false
 					&& attr.value !== 0
 					&& attr.value !== null
@@ -163,6 +177,40 @@ $.createTemplate = (template, args) => {
 				) {
 					element.setAttribute(attr.key, attr.value)
 				}
+			})
+			
+			// Second pass: execute and track reactive attributes after element creation
+			reactive_attributes.forEach((attr) => {
+				const tracking_context = {
+					fn: attr.value,
+					element: element,
+					attributeName: attr.key,
+					dependencies: new Set()
+				}
+				
+				$.tracking_stack.push(tracking_context)
+				const result = attr.value()
+				$.tracking_stack.pop()
+				
+				// Set the initial attribute value - mirror static attribute logic
+				if (
+					result !== false
+					&& result !== 0
+					&& result !== null
+					&& result !== undefined
+				) {
+					element.setAttribute(attr.key, result)
+				} else {
+					element.removeAttribute(attr.key)
+				}
+				
+				// Store dependencies in the global map
+				tracking_context.dependencies.forEach(prop => {
+					if (!$.dependency_map.has(prop)) {
+						$.dependency_map.set(prop, new Set())
+					}
+					$.dependency_map.get(prop).add(tracking_context)
+				})
 			})
 
 			if (rest.includes("$")) {
@@ -245,7 +293,12 @@ $.createTemplate = (template, args) => {
 $.createReactiveProxy = (obj, rootProp = null) => {
 	return new Proxy(obj, {
 		get(target, prop) {
-			// TODO: Track property access for dependency tracking
+			// Track property access for dependency tracking
+			if ($.tracking_stack.length > 0) {
+				const current_context = $.tracking_stack[$.tracking_stack.length - 1]
+				current_context.dependencies.add(rootProp || prop)
+			}
+			
 			const value = target[prop]
 			
 			// Intercept array methods
@@ -264,6 +317,10 @@ $.createReactiveProxy = (obj, rootProp = null) => {
 						})
 						
 						const result = target[prop].apply(target, wrappedArgs)
+						
+						// Trigger reactivity after mutation
+						$.reExecuteDependentFunctions(changedProp)
+						
 						return result
 					}
 				}
@@ -304,8 +361,9 @@ $.reExecuteDependentFunctions = (prop) => {
 		}
 		
 		dependent_functions.forEach(tracking_context => {
-			// Check if node still exists in DOM (memory leak cleanup)
-			if (!tracking_context.node || !document.contains(tracking_context.node)) {
+			// Check if node/element still exists in DOM (memory leak cleanup)
+			const target = tracking_context.node || tracking_context.element
+			if (!target || !document.contains(target)) {
 				functions_to_remove.add(tracking_context)
 				return
 			}
@@ -318,13 +376,50 @@ $.reExecuteDependentFunctions = (prop) => {
 			const new_result = tracking_context.fn()
 			$.tracking_stack.pop()
 			
-			// Update DOM content
-			if (typeof new_result === "string" || typeof new_result === "number") {
-				tracking_context.node.textContent = new_result
-			} else if (new_result && new_result.nodeType) {
-				tracking_context.node.replaceWith(new_result)
-				tracking_context.node = new_result // Update reference
+			// Update DOM - different logic for content vs attributes
+			if (tracking_context.attributeName) {
+				// Attribute update - mirror static attribute logic
+				if (
+					new_result !== false
+					&& new_result !== 0
+					&& new_result !== null
+					&& new_result !== undefined
+				) {
+					tracking_context.element.setAttribute(tracking_context.attributeName, new_result)
+				} else {
+					tracking_context.element.removeAttribute(tracking_context.attributeName)
+				}
+			} else {
+				// Content update
+				if (typeof new_result === "string" || typeof new_result === "number") {
+					tracking_context.node.textContent = new_result
+				} else if (new_result && new_result.nodeType) {
+					tracking_context.node.replaceWith(new_result)
+					tracking_context.node = new_result // Update reference
+				} else if (Array.isArray(new_result)) {
+					// Handle array of elements - replace with first element, append rest after
+					if (new_result.length > 0) {
+						const first = new_result[0]
+						tracking_context.node.replaceWith(first)
+						tracking_context.node = first // Track first element
+						
+						// Append remaining elements after the first
+						let current = first
+						for (let i = 1; i < new_result.length; i++) {
+							current.parentNode.insertBefore(new_result[i], current.nextSibling)
+							current = new_result[i]
+						}
+					}
+				}
 			}
+			
+			// Re-register new dependencies for this function
+			tracking_context.dependencies.forEach(new_prop => {
+				if (!$.dependency_map.has(new_prop)) {
+					$.dependency_map.set(new_prop, new Set())
+				}
+				$.dependency_map.get(new_prop).add(tracking_context)
+			})
 		})
 		
 		// Clean up orphaned functions
