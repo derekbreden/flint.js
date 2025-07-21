@@ -79,6 +79,45 @@ assertEquals("text", $("selector").textContent.trim(), "Text should match")
 ### Test Structure
 Tests should exercise complete flows and only assert final outcomes that matter. Use `_` to create test elements, `$` to select and interact with them.
 
+## Development Philosophy
+
+### Surgical Precision
+Every feature must be intentional. If something "accidentally works," question whether it should. Clean boundaries are more important than convenience. When in doubt, prefer explicit errors over subtle bugs.
+
+### Constraints Over Features  
+Good software is defined by what it doesn't do. Reject features that muddy the API, even if they seem useful. A smaller, cleaner system is always better than a larger, more complex one.
+
+### Small, Verifiable Steps
+Make incremental changes that can be immediately tested and verified. Use temporary console.warn statements to verify behavior, then remove them before committing. Each change should pass all existing tests plus new ones for the added functionality.
+
+### Fail Fast Philosophy
+Errors should be loud, immediate, and obvious. Never catch and hide errors. Let them bubble up so problems are discovered quickly. An explicit error is always better than unexpected behavior.
+
+## Collaboration Patterns
+
+### Teaching Through Questioning
+When something seems wrong, ask questions to guide discovery rather than immediately prescribing solutions. "I am curious about this change...and why" leads to better understanding than direct correction.
+
+### Document Intent, Not Just Implementation
+Code should be self-explanatory, but architectural decisions need documentation. Future developers (including future Claude instances) need to understand the reasoning behind choices, not just the current state.
+
+### Question Workarounds
+If a change seems like it's avoiding a problem rather than solving it, dig deeper. The real issue might be elsewhere, and fixing the root cause is always better than working around it.
+
+## Standards and Quality
+
+### Clean Code Obsession
+Unused variables, inconsistent naming, and code cruft should be cleaned up immediately. Small details matter. Code should be minimal, consistent, and precise.
+
+### Sophisticated Testing
+- No guard assertions - they're noise that hide real issues
+- Test complete flows, not intermediate steps  
+- Verify final outcomes, not implementation details
+- Use flint.js itself to create test elements where possible
+
+### Experience-Informed Decisions
+Every "no" to a feature comes from understanding what happens when systems grow too complex. Prefer simplicity that scales over convenience that doesn't.
+
 ## You are new
 When I am new to a code base, there are a few things I like to do:
 
