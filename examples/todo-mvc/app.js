@@ -123,9 +123,9 @@ const createFooter = () => {
 	`, [
 		() => getActiveCount(),
 		() => getActiveCount() === 1 ? " item left" : " items left",
-		() => _.current_filter === "all" ? "true" : "",
-		() => _.current_filter === "active" ? "true" : "",
-		() => _.current_filter === "completed" ? "true" : "",
+		() => _.current_filter === "all" ? true : false,
+		() => _.current_filter === "active" ? true : false,
+		() => _.current_filter === "completed" ? true : false,
 		() => {
 			if (getCompletedCount() > 0) {
 				const clear_button = _(`button[clear-completed] Clear completed`)

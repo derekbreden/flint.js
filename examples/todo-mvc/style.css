@@ -299,7 +299,7 @@ ul[filters] li a:hover {
 	border-color: rgba(175, 47, 47, 0.1);
 }
 
-a[selected="true"] {
+ul[filters] li a[selected] {
 	border-color: rgba(175, 47, 47, 0.2);
 }
 
