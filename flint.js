@@ -132,7 +132,6 @@ const _ = (template, args) => {
 			parent.appendChild(element)
 		}
 
-		const children = []
 		let child_level = false
 		for (let i = index + 1; i < nodes.length; i++) {
 			if (nodes[i].level > node.level) {
@@ -150,7 +149,7 @@ const _ = (template, args) => {
 		return element
 	}
 
-	const rootElement = document.createElement("div")
+	const root_element = document.createElement("div")
 
 	let child_level = false
 	for (let i = 0; i < flint.length; i++) {
@@ -158,16 +157,16 @@ const _ = (template, args) => {
 			child_level = flint[i].level
 		}
 		if (flint[i].level === child_level) {
-			createElement(flint, i, rootElement)
+			createElement(flint, i, root_element)
 		}
 	}
 
-	if (rootElement.children.length === 1) {
-		addHelpers(rootElement.children[0])
-		return rootElement.children[0]
+	if (root_element.children.length === 1) {
+		addHelpers(root_element.children[0])
+		return root_element.children[0]
 	} else {
-		addHelpers(rootElement)
-		return rootElement
+		addHelpers(root_element)
+		return root_element
 	}
 }
 
@@ -175,7 +174,7 @@ const $ = (selector, element) => {
 	element = element || document
 	const $all = element.querySelectorAll(selector)
 
-	$all.forEach((element) => addHelpers(element, $all))
+	$all.forEach((el) => addHelpers(el, $all))
 
 	if ($all.length === 1) {
 		return $all[0]
