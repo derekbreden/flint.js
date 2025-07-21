@@ -170,14 +170,35 @@ const createTemplate = (template, args) => {
 	}
 }
 
+const createReactiveProxy = (obj, rootProp = null) => {
+	return new Proxy(obj, {
+		get(target, prop) {
+			// TODO: Track property access for dependency tracking
+			const value = target[prop]
+			if (value && typeof value === "object" && !value.nodeType) {
+				return createReactiveProxy(value, rootProp || prop)
+			}
+			return value
+		},
+		set(target, prop, value) {
+			const changedProp = rootProp || prop
+			target[prop] = value
+			return true
+		}
+	})
+}
+
 // Create _ as both a function (for templates) and a reactive state object
 const _ = new Proxy(createTemplate, {
 	get(target, prop) {
 		// TODO: Track property access for dependency tracking
-		return target[prop]
+		const value = target[prop]
+		if (value && typeof value === "object" && !value.nodeType) {
+			return createReactiveProxy(value, prop)
+		}
+		return value
 	},
 	set(target, prop, value) {
-		// TODO: Trigger re-renders of dependent functions
 		target[prop] = value
 		return true
 	}
