@@ -275,7 +275,7 @@ const createReactiveProxy = (obj, rootProp = null) => {
 
 // Dependency tracking infrastructure
 const dependency_map = new Map() // Map<string, Set<{fn, node}>>
-let tracking_stack = [] // Stack for capturing dependencies during function execution
+const tracking_stack = [] // Stack for capturing dependencies during function execution
 
 const reExecuteDependentFunctions = (prop) => {
 	if (dependency_map.has(prop)) {
