@@ -142,6 +142,52 @@ const tests = {
 			"Function should return DOM elements properly"
 		)
 	},
+
+	testStateMonitoring: async () => {
+		const window = await setupTestEnvironment()
+		const { $, _ } = window
+
+		// Set some state properties on _
+		_.count = 42
+		_.user = { name: "Bob", age: 30 }
+		_.items = ["apple", "banana", "cherry"]
+
+		// Access the properties (should trigger get monitoring)
+		const count_value = _.count
+		const user_name = _.user.name
+		const first_item = _.items[0]
+
+		// Use state in template functions
+		const app = _(`
+			div[state-test]
+				p $1
+				p $2
+				p $3
+		`, [
+			() => `Count: ${_.count}`,
+			() => `User: ${_.user.name}`,
+			() => `First item: ${_.items[0]}`
+		])
+
+		window.document.body.appendChild(app)
+
+		// Verify the values made it through correctly
+		assertEquals(
+			"Count: 42",
+			$("p:first-child").textContent,
+			"State count should be accessible"
+		)
+		assertEquals(
+			"User: Bob",
+			$("p:nth-child(2)").textContent,
+			"State user.name should be accessible"
+		)
+		assertEquals(
+			"First item: apple",
+			$("p:nth-child(3)").textContent,
+			"State items[0] should be accessible"
+		)
+	},
 }
 
 runTests(path.basename(__filename), Object.values(tests))

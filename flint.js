@@ -17,7 +17,7 @@ const addHelpers = (element, $all) => {
 	element.length = $all ? $all.length : 1
 }
 
-const _ = (template, args) => {
+const createTemplate = (template, args) => {
 	// Execute any functions in args and use their return values
 	const flint_args = (args || []).map(arg => {
 		if (typeof arg === "function") {
@@ -169,6 +169,19 @@ const _ = (template, args) => {
 		return root_element
 	}
 }
+
+// Create _ as both a function (for templates) and a reactive state object
+const _ = new Proxy(createTemplate, {
+	get(target, prop) {
+		// TODO: Track property access for dependency tracking
+		return target[prop]
+	},
+	set(target, prop, value) {
+		// TODO: Trigger re-renders of dependent functions
+		target[prop] = value
+		return true
+	}
+})
 
 const $ = (selector, element) => {
 	element = element || document
