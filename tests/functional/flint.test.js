@@ -171,21 +171,43 @@ const tests = {
 
 		window.document.body.appendChild(app)
 
-		// Verify the values made it through correctly
+		// Verify the initial values made it through correctly
 		assertEquals(
 			"Count: 42",
 			$("p:first-child").textContent,
-			"State count should be accessible"
+			"Initial state count should be accessible"
 		)
 		assertEquals(
 			"User: Bob",
 			$("p:nth-child(2)").textContent,
-			"State user.name should be accessible"
+			"Initial state user.name should be accessible"
 		)
 		assertEquals(
 			"First item: apple",
 			$("p:nth-child(3)").textContent,
-			"State items[0] should be accessible"
+			"Initial state items[0] should be accessible"
+		)
+		
+		// Test reactivity: change state and verify DOM updates automatically
+		_.count = 100
+		assertEquals(
+			"Count: 100",
+			$("p:first-child").textContent,
+			"DOM should update when count changes"
+		)
+		
+		_.user.name = "Alice"
+		assertEquals(
+			"User: Alice",
+			$("p:nth-child(2)").textContent,
+			"DOM should update when user.name changes"
+		)
+		
+		_.items[0] = "orange"
+		assertEquals(
+			"First item: orange",
+			$("p:nth-child(3)").textContent,
+			"DOM should update when items[0] changes"
 		)
 	},
 }
