@@ -400,17 +400,7 @@ $.reExecuteDependentFunctions = (prop) => {
 			} else {
 				// Content update
 				if (typeof new_result === "string" || typeof new_result === "number") {
-					if (tracking_context.node.nodeType === 3) { // TEXT_NODE
-						tracking_context.node.textContent = new_result
-					} else if (tracking_context.node.nodeType === 1) { // ELEMENT_NODE
-						// Replace element with text node when switching from element to string
-						const textNode = document.createTextNode(new_result)
-						tracking_context.node.replaceWith(textNode)
-						tracking_context.node = textNode
-					} else {
-						// Fallback for other node types
-						tracking_context.node.textContent = new_result
-					}
+					tracking_context.node.textContent = new_result
 				} else if (Array.isArray(new_result)) {
 					// For array updates, replace with wrapper element
 					const wrapper = document.createElement("span")
