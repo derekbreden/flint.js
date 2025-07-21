@@ -27,7 +27,7 @@ const getActiveCount = () => _.todos.filter(todo => !todo.completed).length
 const getCompletedCount = () => _.todos.filter(todo => todo.completed).length
 
 // DOM creation functions
-const createTodoItem = (todo) => {
+const createTodoItem = (todo, afterRender) => {
 	const todo_item = _(`
 		li[todo-item][data-id=$1][completed=$2][editing=$3]
 			div[view]
@@ -63,10 +63,10 @@ const createTodoItem = (todo) => {
 	if (edit_input) {
 		// If this todo is being edited, focus the input after DOM insertion
 		if (_.editing_id === todo.id) {
-			setTimeout(() => {
+			afterRender(() => {
 				edit_input.focus()
 				edit_input.select()
-			}, 0)
+			})
 		}
 		
 		edit_input.on("keydown", (e) => {
@@ -95,7 +95,7 @@ const createMainSection = () => {
 			ul[todo-list] $2
 	`, [
 		() => _.todos.length > 0 && getActiveCount() === 0,
-		() => getFilteredTodos(_.current_filter).map(todo => createTodoItem(todo))
+		(afterRender) => getFilteredTodos(_.current_filter).map(todo => createTodoItem(todo, afterRender))
 	])
 	
 	// Attach toggle-all handler

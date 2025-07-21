@@ -36,7 +36,18 @@ $.addHelpers = (element, $all) => {
 	element.length = $all ? $all.length : 1
 }
 
-$.executeWithTracking = (fn, target_node) => {
+$.createAfterRenderSystem = () => {
+	const callbacks = []
+	const afterRender = (callback) => callbacks.push(callback)
+	const runCallbacks = () => {
+		if (callbacks.length > 0) {
+			callbacks.forEach(callback => callback())
+		}
+	}
+	return { afterRender, runCallbacks }
+}
+
+$.executeWithTracking = (fn, target_node, afterRender) => {
 	const tracking_context = {
 		fn: fn,
 		node: target_node,
@@ -44,7 +55,7 @@ $.executeWithTracking = (fn, target_node) => {
 	}
 	
 	$.tracking_stack.push(tracking_context)
-	const result = fn()
+	const result = fn(afterRender)
 	$.tracking_stack.pop()
 	
 	// Store dependencies in the global map
@@ -63,6 +74,9 @@ $.createTemplate = (template, args) => {
 	const flint_args = (args || []).map(arg => {
 		return arg // Keep functions as-is for now
 	})
+	
+	// Create afterRender system
+	const { afterRender, runCallbacks } = $.createAfterRenderSystem()
 	
 	let flint = template
 		.split("\n")
@@ -136,7 +150,7 @@ $.createTemplate = (template, args) => {
 				}
 				
 				$.tracking_stack.push(tracking_context)
-				arg = arg()
+				arg = arg(afterRender)
 				$.tracking_stack.pop()
 			}
 
@@ -201,7 +215,7 @@ $.createTemplate = (template, args) => {
 				}
 				
 				$.tracking_stack.push(tracking_context)
-				const result = attr.value()
+				const result = attr.value(afterRender)
 				$.tracking_stack.pop()
 				
 				// Set the initial attribute value - mirror static attribute logic
@@ -234,7 +248,7 @@ $.createTemplate = (template, args) => {
 					
 					// Execute function with tracking if needed
 					if (typeof arg === "function") {
-						arg = $.executeWithTracking(arg, element)
+						arg = $.executeWithTracking(arg, element, afterRender)
 					}
 					
 					if (arg !== undefined) {
@@ -300,13 +314,19 @@ $.createTemplate = (template, args) => {
 		}
 	}
 
+	let final_element
 	if (root_element.children.length === 1) {
 		$.addHelpers(root_element.children[0])
-		return root_element.children[0]
+		final_element = root_element.children[0]
 	} else {
 		$.addHelpers(root_element)
-		return root_element
+		final_element = root_element
 	}
+	
+	// Run afterRender callbacks after DOM element is fully created
+	runCallbacks()
+	
+	return final_element
 }
 
 $.createReactiveProxy = (obj, rootProp = null) => {
@@ -379,6 +399,9 @@ $.reExecuteDependentFunctions = (prop) => {
 			return
 		}
 		
+		// Create afterRender system for reactive updates
+		const { afterRender, runCallbacks } = $.createAfterRenderSystem()
+		
 		dependent_functions.forEach(tracking_context => {
 			// Check if node/element still exists in DOM (memory leak cleanup)
 			let target = tracking_context.node || tracking_context.element
@@ -395,7 +418,7 @@ $.reExecuteDependentFunctions = (prop) => {
 			
 			// Re-execute with tracking
 			$.tracking_stack.push(tracking_context)
-			const new_result = tracking_context.fn()
+			const new_result = tracking_context.fn(afterRender)
 			$.tracking_stack.pop()
 			
 			// Update DOM - different logic for content vs attributes
@@ -506,6 +529,9 @@ $.reExecuteDependentFunctions = (prop) => {
 		if (dependent_functions.size === 0) {
 			$.dependency_map.delete(prop)
 		}
+		
+		// Run afterRender callbacks after DOM updates
+		runCallbacks()
 	}
 }
 
