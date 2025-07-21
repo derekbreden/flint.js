@@ -18,7 +18,13 @@ const addHelpers = (element, $all) => {
 }
 
 const _ = (template, args) => {
-	const flint_args = args || []
+	// Execute any functions in args and use their return values
+	const flint_args = (args || []).map(arg => {
+		if (typeof arg === "function") {
+			return arg()
+		}
+		return arg
+	})
 	
 	let flint = template
 		.split("\n")

@@ -86,6 +86,62 @@ const tests = {
 			"Click handler should have fired"
 		)
 	},
+
+	testFunctionParameters: async () => {
+		const window = await setupTestEnvironment()
+		const { $, _ } = window
+
+		let count = 5
+		let user = { name: "Alice", active: true }
+
+		// Test function parameters returning various types
+		const app = _(`
+			div[test-functions]
+				h1 $1
+				p Count: $2
+				p Status: $3
+				$4
+		`, [
+			() => `Welcome ${user.name}`,
+			() => count,
+			() => user.active ? "Active" : "Inactive", 
+			() => _(`
+				ul
+					li Item 1
+					li Item 2
+			`)
+		])
+
+		window.document.body.appendChild(app)
+
+		// Test function returning string
+		assertEquals(
+			"Welcome Alice",
+			$("h1").textContent,
+			"Function should return interpolated string"
+		)
+
+		// Test function returning number (converted to string)  
+		assertEquals(
+			"Count: 5",
+			$("p")[0].textContent,
+			"Function should return number as string"
+		)
+
+		// Test function returning conditional string
+		assertEquals(
+			"Status: Active",
+			$("p")[1].textContent,
+			"Function should return conditional result"
+		)
+
+		// Test function returning DOM element
+		assertEquals(
+			2,
+			$("ul li").length,
+			"Function should return DOM elements properly"
+		)
+	},
 }
 
 runTests(path.basename(__filename), Object.values(tests))
