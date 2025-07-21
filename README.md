@@ -70,11 +70,11 @@ const app = _(`
     if (_.showDetails) {
       return _(`
         div
-          p Name: $1
-          p Email: $2
+          p $1
+          p $2
       `, [
-        () => _.user.name,
-        () => _.user.email
+        () => `Name: ${_.user.name}`,
+        () => `Email: ${_.user.email}`
       ])
     }
     return _(`p Click to show details`)
