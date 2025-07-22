@@ -168,20 +168,6 @@ const createFooter = () => {
 	return footer
 }
 
-
-
-// Router
-const handleRoute = () => {
-	const hash = window.location.hash
-	if (hash === "#/active") {
-		_.current_filter = "active"
-	} else if (hash === "#/completed") {
-		_.current_filter = "completed"
-	} else {
-		_.current_filter = "all"
-	}
-}
-
 // Initialize app
 const initApp = () => {
 	const todoapp = $(".todoapp")
@@ -219,6 +205,16 @@ const initApp = () => {
 }
 
 // Handle routing
+const handleRoute = () => {
+	const hash = window.location.hash
+	if (hash === "#/active") {
+		_.current_filter = "active"
+	} else if (hash === "#/completed") {
+		_.current_filter = "completed"
+	} else {
+		_.current_filter = "all"
+	}
+}
 window.addEventListener("hashchange", handleRoute)
 handleRoute()
 
