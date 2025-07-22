@@ -15,16 +15,7 @@ const saveTodos = () => {
 }
 
 // Utility functions
-const nextId = () => Date.now()
-
-const getFilteredTodos = (filter) => {
-	if (filter === "active") return _.todos.filter(todo => !todo.completed)
-	if (filter === "completed") return _.todos.filter(todo => todo.completed)
-	return _.todos
-}
-
 const getActiveCount = () => _.todos.filter(todo => !todo.completed).length
-const getCompletedCount = () => _.todos.filter(todo => todo.completed).length
 
 // DOM creation functions
 const createTodoItem = (todo, afterRender) => {
@@ -118,7 +109,14 @@ const createMainSection = () => {
 			ul[todo-list] $2
 	`, [
 		() => _.todos.length > 0 && getActiveCount() === 0,
-		(afterRender) => getFilteredTodos(_.current_filter).map(todo => createTodoItem(todo, afterRender))
+		(afterRender) => {
+			const filtered_todos = _.current_filter === "active" 
+				? _.todos.filter(todo => !todo.completed)
+				: _.current_filter === "completed" 
+				? _.todos.filter(todo => todo.completed)
+				: _.todos
+			return filtered_todos.map(todo => createTodoItem(todo, afterRender))
+		}
 	])
 	
 	// Attach toggle-all handler
@@ -154,7 +152,8 @@ const createFooter = () => {
 		() => _.current_filter === "active" ? true : false,
 		() => _.current_filter === "completed" ? true : false,
 		() => {
-			if (getCompletedCount() > 0) {
+			const completed_count = _.todos.filter(todo => todo.completed).length
+			if (completed_count > 0) {
 				const clear_button = _(`button[clear-completed] Clear completed`)
 				clear_button.on("click", () => {
 					_.todos = _.todos.filter(todo => !todo.completed)
@@ -169,17 +168,6 @@ const createFooter = () => {
 	return footer
 }
 
-// Event handlers
-const addTodo = (text) => {
-	if (text.trim()) {
-		_.todos.push({
-			id: nextId(),
-			text: text.trim(),
-			completed: false
-		})
-		saveTodos()
-	}
-}
 
 
 // Router
@@ -203,7 +191,15 @@ const initApp = () => {
 	if (new_todo_input) {
 		new_todo_input.on("keydown", (e) => {
 			if (e.key === "Enter") {
-				addTodo(e.target.value)
+				const text = e.target.value
+				if (text.trim()) {
+					_.todos.push({
+						id: Date.now(),
+						text: text.trim(),
+						completed: false
+					})
+					saveTodos()
+				}
 				e.target.value = ""
 			}
 		})
